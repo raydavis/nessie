@@ -56,6 +56,11 @@ def _get_student(cs_id, mock=None):
         return authorized_request(url)
 
 
+def _get_student_acst(cs_id):
+    url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/academic-status')
+    return authorized_request(url)
+
+
 def get_term_gpas(cs_id):
     response = _get_registrations(cs_id)
     if response and hasattr(response, 'json'):
@@ -87,7 +92,7 @@ def get_v2_bulk_undergrads(size=100, page=1):
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('students', [])
         if len(unwrapped) < 100:
-            app.logger.warn(f'End of the loop; {len(unwrapped)} students returned')
+            app.logger.warn(f'Only {len(unwrapped)} students returned')
         return unwrapped
     else:
         app.logger.error(f'End of the loop; got error reponse: {response}')
@@ -216,14 +221,14 @@ def _get_v2_bulk_sids(up_to_100_sids, term_id=None):
     id_list = ','.join(up_to_100_sids)
     params = {
         'id-list': id_list,
-        'inc-regs': True,
+        'affiliation-status': 'ALL',
         'inc-acad': True,
-        'inc-cntc': True,
         'inc-attr': True,
+        'inc-cntc': True,
         'inc-completed-programs': True,
         'inc-dmgr': True,
         'inc-gndr': True,
-        'affiliation-status': 'ALL',
+        'inc-regs': True,
     }
     if term_id:
         params['term-id'] = term_id
@@ -231,8 +236,9 @@ def _get_v2_bulk_sids(up_to_100_sids, term_id=None):
     return authorized_request_v2(url)
 
 
-def _get_v2_single_student(sid):
-    url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', {
+def _get_v2_single_student(sid, term_id=None, as_of=None):
+    params = {
+        'affiliation-status': 'ALL',
         'inc-acad': True,
         'inc-attr': True,
         'inc-cntc': True,
@@ -240,8 +246,15 @@ def _get_v2_single_student(sid):
         'inc-dmgr': True,
         'inc-gndr': True,
         'inc-regs': True,
-        'affiliation-status': 'ALL',
-    })
+    }
+    if term_id:
+        params['term-id'] = term_id
+    if as_of:
+        # In format '2018-12-01'. Choosing a date before the end of the no-longer-enrolled student's last enrolled
+        # term appears to be the only way to restore a full v1-style academicStatuses element
+        # which includes cumulativeUnits, cumulativeGPA, termsInAttendance, and major.
+        params['as-of-date'] = as_of
+    url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', params)
     return authorized_request_v2(url)
 
 
@@ -254,7 +267,7 @@ def _get_v2_single_student_as_of(sid):
         'inc-dmgr': True,
         'inc-gndr': True,
         'inc-regs': True,
-        'as-of-date': '2019-02-01',
+        'as-of-date': '2018-12-01',
         'affiliation-status': 'ALL',
     })
     return authorized_request_v2(url)
