@@ -23,6 +23,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 ENHANCEMENTS, OR MODIFICATIONS.
 """
 
+from timeit import default_timer as timer
+
 from flask import current_app as app
 from nessie.lib import http
 from nessie.lib.mockingbird import fixture
@@ -41,8 +43,8 @@ def get_v1_student(cs_id):
         return
 
 
-def get_v2_student(cs_id):
-    response = _get_v2_single_student(cs_id)
+def get_v2_student(cs_id, term_id=None, as_of=None):
+    response = _get_v2_single_student(cs_id, term_id, as_of)
     if response and hasattr(response, 'json'):
         return response.json().get('apiResponse', {}).get('response', {})
     else:
@@ -98,8 +100,8 @@ def get_v2_bulk_undergrads(size=100, page=1):
         app.logger.error(f'End of the loop; got error reponse: {response}')
         return False
 
-def get_v2_bulk_by_sids(sids, term_id=None):
-    response = _get_v2_bulk_sids(sids, term_id)
+def get_v2_bulk_by_sids(sids, term_id=None, as_of=None):
+    response = _get_v2_bulk_sids(sids, term_id, as_of)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('students', [])
         if len(unwrapped) < len(sids):
@@ -108,6 +110,7 @@ def get_v2_bulk_by_sids(sids, term_id=None):
     else:
         app.logger.error(f'Got error reponse: {response}')
         return False
+
 
 def loop_for_sid(sid):
     page = 1
@@ -121,40 +124,65 @@ def loop_for_sid(sid):
         page = page + 1
 
 
-def loop_all_advisee_sids(term_id=None):
+def loop_all_advisee_sids(term_id=None, as_of=None):
     from nessie.lib.queries import get_all_student_ids
     all_sids = [s['sid'] for s in get_all_student_ids()]
     all_feeds = []
+    start_api = timer()
     for i in range(0, len(all_sids), 100):
         sids = all_sids[i:i + 100]
-        feeds = get_v2_bulk_by_sids(sids, term_id)
+        feeds = get_v2_bulk_by_sids(sids, term_id, as_of)
         if feeds:
             all_feeds += feeds
-    app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)}')
+        break
+    app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
     # The bulk API may have filtered out some students altogether, and may have returned others with feeds that
     # are missing necessary data (notably cumulative units and GPA, which are tied to registration term).
     # Try to fill that missing student data with a follow-up loop of slower single-SID API calls.
     missing_sids = list(all_sids)
-    gappy_sids = []
+    sids_without_academic_statuses = {}
+    sids_without_cum_gpa = {}
     for feed in all_feeds:
-        # TODO Instead look for "type": "student-id"
-        sid = feed['identifiers'][0]['id']
+        sid = next((id['id'] for id in feed['identifiers'] if id['type'] == 'student-id'), None)
+        # sid = feed['identifiers'][0]['id']
+        if not sid:
+            app.logger.error(f"Got a student feed with no student-id: {feed['identifiers']}")
+            continue
         missing_sids.remove(sid)
+        registrations = feed.get('registrations')
+        if registrations:
+            last_date = registrations[-1]['term']['endDate']
+        else:
+            last_date = ''
         academic_statuses = feed.get('academicStatuses')
         if (not academic_statuses):
-            gappy_sids.append(sid)
-        elif len(academic_statuses) > 1:
-            app.logger.warn(f'SID {sid} has mult academicStatuses: {academic_statuses}')
-
-    app.logger.warn(f'SIDs which were not returned from list API: {missing_sids}')
-    app.logger.warn(f'SIDs which were missing academicStatuses: {gappy_sids}')
-    for sid in missing_sids + gappy_sids:
-        feed = get_v2_student(sid)
-        if feed:
-            all_feeds.append(feed)
+            sids_without_academic_statuses.setdefault(last_date, []).append(sid)
         else:
-            app.logger.warn(f'Could not find data for SID {sid}')
-    return all_feeds
+            academic_status = next(
+                (ac for ac in academic_statuses if ac['studentCareer']['academicCareer']['code'] != 'UCBX'),
+                None
+            )
+            if not academic_status:
+                app.logger.error(f'SID {sid} has no non-UCBX academicCareer')
+                sids_without_academic_statuses.setdefault(last_date, []).append(sid)
+                continue
+            if not academic_status.get('cumulativeGPA'):
+                sids_without_cum_gpa.setdefault(last_date, []).append(sid)
+    app.logger.warn(f'SIDs which were not returned from list API: {missing_sids}')
+    app.logger.warn(f'SIDs which were missing academicStatuses: {sids_without_academic_statuses}')
+    app.logger.warn(f'SIDs which were missing cumumultiveGPA: {sids_without_cum_gpa}')
+    # for sid in missing_sids + sids_without_academics_statuses:
+    #     feed = get_v2_student(sid)
+    #     if feed:
+    #         all_feeds.append(feed)
+    #     else:
+    #         app.logger.warn(f'Could not find data for SID {sid}')
+    return {
+        'all_feeds': all_feeds,
+        'missing_sids': missing_sids,
+        'sids_without_academics_statuses': sids_without_academic_statuses,
+        'sids_without_cum_gpa': sids_without_cum_gpa,
+    }
 
 def loop_all_undergrads():
     page = 1
@@ -217,7 +245,7 @@ def _get_v2_bulk_undergrads(size=100, page=1):
     return authorized_request_v2(url)
 
 
-def _get_v2_bulk_sids(up_to_100_sids, term_id=None):
+def _get_v2_bulk_sids(up_to_100_sids, term_id=None, as_of=None):
     id_list = ','.join(up_to_100_sids)
     params = {
         'id-list': id_list,
@@ -232,6 +260,8 @@ def _get_v2_bulk_sids(up_to_100_sids, term_id=None):
     }
     if term_id:
         params['term-id'] = term_id
+    if as_of:
+        params['as-of-date'] = as_of
     url = http.build_url(app.config['STUDENT_API_URL'] + '/list', params)
     return authorized_request_v2(url)
 
