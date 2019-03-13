@@ -89,6 +89,7 @@ def get_term_gpas(cs_id):
     else:
         return
 
+
 def get_v2_bulk_undergrads(size=100, page=1):
     response = _get_v2_bulk_undergrads(size, page)
     if response and hasattr(response, 'json'):
@@ -100,6 +101,7 @@ def get_v2_bulk_undergrads(size=100, page=1):
         app.logger.error(f'End of the loop; got error reponse: {response}')
         return False
 
+
 def get_v2_bulk_by_sids(sids, term_id=None, as_of=None):
     response = _get_v2_bulk_sids(sids, term_id, as_of)
     if response and hasattr(response, 'json'):
@@ -110,6 +112,7 @@ def get_v2_bulk_by_sids(sids, term_id=None, as_of=None):
     else:
         app.logger.error(f'Got error reponse: {response}')
         return False
+
 
 def loop_all_advisee_sids(term_id=None, as_of=None):
     from nessie.lib.queries import get_all_student_ids
@@ -131,7 +134,7 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
     sids_without_cum_gpa = {}
 
     count_without_academic_statuses = 0
-    count_sids_without_cum_gpa =0
+    count_sids_without_cum_gpa = 0
     for feed in all_feeds:
         sid = next((id['id'] for id in feed['identifiers'] if id['type'] == 'student-id'), None)
         if not sid:
@@ -150,7 +153,7 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
         else:
             academic_status = next(
                 (ac for ac in academic_statuses if ac['studentCareer']['academicCareer']['code'] != 'UCBX'),
-                None
+                None,
             )
             if not academic_status:
                 app.logger.error(f'SID {sid} has no non-UCBX academicCareer')
@@ -159,9 +162,9 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
             if not academic_status.get('cumulativeGPA'):
                 if not last_date:
                     last_date = (
-                            academic_status.get('studentCareer', {}).get('toDate') or
-                            academic_status.get('studentPlans', [{}])[0].get('toDate') or
-                            ''
+                        academic_status.get('studentCareer', {}).get('toDate')
+                        or academic_status.get('studentPlans', [{}])[0].get('toDate')
+                        or ''
                     )
                 count_sids_without_cum_gpa += 1
                 sids_without_cum_gpa.setdefault(last_date, []).append(sid)
@@ -177,18 +180,21 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
         'sids_without_cum_gpa': sids_without_cum_gpa,
     }
 
+
 def _get_v2_bulk_undergrads(size=100, page=1):
-    url = http.build_url(app.config['STUDENT_API_URL'], {
-        'affiliation-code': 'UNDERGRAD',
-        'affiliation-status': 'ALL',
-        'inc-acad': True,
-        'inc-cntc': True,
-        'inc-completed-programs': True,
-        'inc-regs': True,
-        'page-number': page,
-        'page-size': size,
-        'term-id': '2192',
-    })
+    url = http.build_url(
+        app.config['STUDENT_API_URL'], {
+            'affiliation-code': 'UNDERGRAD',
+            'affiliation-status': 'ALL',
+            'inc-acad': True,
+            'inc-cntc': True,
+            'inc-completed-programs': True,
+            'inc-regs': True,
+            'page-number': page,
+            'page-size': size,
+            'term-id': '2192',
+        },
+    )
     return authorized_request_v2(url)
 
 

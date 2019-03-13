@@ -33,7 +33,7 @@ class TestSisStudentApi:
 
     def test_get_student(self, app):
         """Returns unwrapped data."""
-        student = student_api.get_student(11667051)
+        student = student_api.get_v1_student(11667051)
         assert len(student['academicStatuses']) == 2
         assert student['academicStatuses'][0]['currentRegistration']['academicCareer']['code'] == 'UCBX'
         assert student['academicStatuses'][1]['cumulativeGPA']['average'] == pytest.approx(3.8, 0.01)

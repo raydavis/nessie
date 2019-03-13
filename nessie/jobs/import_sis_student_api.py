@@ -38,7 +38,7 @@ from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_
 
 def async_get_feed(app_obj, csid):
     with app_obj.app_context():
-        feed = sis_student_api.get_student(csid)
+        feed = sis_student_api.get_v1_student(csid)
         result = {
             'sid': csid,
             'feed': feed,
