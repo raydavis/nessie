@@ -58,7 +58,7 @@ def _get_student(cs_id, mock=None):
         return authorized_request(url)
 
 
-def _get_student_acst(cs_id):
+def _get_v1_student_acst(cs_id):
     url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/academic-status')
     return authorized_request(url)
 
@@ -111,19 +111,6 @@ def get_v2_bulk_by_sids(sids, term_id=None, as_of=None):
         app.logger.error(f'Got error reponse: {response}')
         return False
 
-
-def loop_for_sid(sid):
-    page = 1
-    while True:
-        coes = get_v2_bulk_undergrads(page=page)
-        if not coes:
-            return None
-        rec = next((r for r in coes if r['identifiers'][0]['id'] == sid), None)
-        if rec:
-            return rec
-        page = page + 1
-
-
 def loop_all_advisee_sids(term_id=None, as_of=None):
     from nessie.lib.queries import get_all_student_ids
     all_sids = [s['sid'] for s in get_all_student_ids()]
@@ -134,28 +121,31 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
         feeds = get_v2_bulk_by_sids(sids, term_id, as_of)
         if feeds:
             all_feeds += feeds
-        break
     app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
     # The bulk API may have filtered out some students altogether, and may have returned others with feeds that
     # are missing necessary data (notably cumulative units and GPA, which are tied to registration term).
     # Try to fill that missing student data with a follow-up loop of slower single-SID API calls.
     missing_sids = list(all_sids)
+    ucbx_only_sids = []
     sids_without_academic_statuses = {}
     sids_without_cum_gpa = {}
+
+    count_without_academic_statuses = 0
+    count_sids_without_cum_gpa =0
     for feed in all_feeds:
         sid = next((id['id'] for id in feed['identifiers'] if id['type'] == 'student-id'), None)
-        # sid = feed['identifiers'][0]['id']
         if not sid:
             app.logger.error(f"Got a student feed with no student-id: {feed['identifiers']}")
             continue
         missing_sids.remove(sid)
         registrations = feed.get('registrations')
+        academic_statuses = feed.get('academicStatuses')
         if registrations:
             last_date = registrations[-1]['term']['endDate']
         else:
             last_date = ''
-        academic_statuses = feed.get('academicStatuses')
         if (not academic_statuses):
+            count_without_academic_statuses += 1
             sids_without_academic_statuses.setdefault(last_date, []).append(sid)
         else:
             academic_status = next(
@@ -164,83 +154,40 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
             )
             if not academic_status:
                 app.logger.error(f'SID {sid} has no non-UCBX academicCareer')
-                sids_without_academic_statuses.setdefault(last_date, []).append(sid)
+                ucbx_only_sids.append(sid)
                 continue
             if not academic_status.get('cumulativeGPA'):
+                if not last_date:
+                    last_date = (
+                            academic_status.get('studentCareer', {}).get('toDate') or
+                            academic_status.get('studentPlans', [{}])[0].get('toDate') or
+                            ''
+                    )
+                count_sids_without_cum_gpa += 1
                 sids_without_cum_gpa.setdefault(last_date, []).append(sid)
-    app.logger.warn(f'SIDs which were not returned from list API: {missing_sids}')
-    app.logger.warn(f'SIDs which were missing academicStatuses: {sids_without_academic_statuses}')
-    app.logger.warn(f'SIDs which were missing cumumultiveGPA: {sids_without_cum_gpa}')
-    # for sid in missing_sids + sids_without_academics_statuses:
-    #     feed = get_v2_student(sid)
-    #     if feed:
-    #         all_feeds.append(feed)
-    #     else:
-    #         app.logger.warn(f'Could not find data for SID {sid}')
+    app.logger.warn(f'{len(missing_sids)} SIDs were not returned from list API: {missing_sids}')
+    app.logger.warn(f'{len(ucbx_only_sids)} SIDs were UCBX only: {ucbx_only_sids}')
+    app.logger.warn(f'{count_without_academic_statuses} SIDs were missing academicStatuses: {sids_without_academic_statuses}')
+    app.logger.warn(f'{count_sids_without_cum_gpa} SIDs  were missing cumumultiveGPA: {sids_without_cum_gpa}')
     return {
         'all_feeds': all_feeds,
         'missing_sids': missing_sids,
-        'sids_without_academics_statuses': sids_without_academic_statuses,
+        'ucbx_only_sids': ucbx_only_sids,
+        'sids_without_academic_statuses': sids_without_academic_statuses,
         'sids_without_cum_gpa': sids_without_cum_gpa,
     }
 
-def loop_all_undergrads():
-    page = 1
-    while True:
-        list = get_v2_bulk_undergrads(page=page)
-        if not list:
-            app.logger.warn(f'All done as of page {page}')
-            return None
-        app.logger.warn(f'Page {page} has {len(list)} records')
-        page = page + 1
-
-def loop_undergrads_test():
-    sids = []
-    with open('sids_snapshot.txt', 'r') as f:
-        sids = f.read().splitlines()
-    app.logger.warn(f'Got {len(sids)} advisee SIDs')
-    page = 1
-    count = 0
-    while True:
-        list = get_v2_bulk_undergrads(page=page)
-        if not list:
-            app.logger.warn(f'All done as of page {page}')
-            break
-        app.logger.warn(f'Page {page} has {len(list)} records')
-        count += len(list)
-        for feed in list:
-            sid = feed['identifiers'][0]['id']
-            if sid in sids:
-                sids.remove(sid)
-        # if len(list) < 100: Security filters are apparently applied after the original count, and so this cannot be relied on
-        #     break
-        page = page + 1
-    app.logger.warn(f'API returned {count} feeds; {len(sids)} advisee SIDs left to fetch: {sids}')
-
 def _get_v2_bulk_undergrads(size=100, page=1):
-    # Returns 100 records in 10-to-18 seconds. The default page-size, 50, returns in 8 seconds.
-    # Whereas the SID-specific interface will always return the current cumulative GPA and units in academicStatuses
-    # data, this population-wide interface will only include cumulative GPA and units if "inc-regs" is
-    # specified.
     url = http.build_url(app.config['STUDENT_API_URL'], {
-        # 'collection-type': 'degree_list',
         'affiliation-code': 'UNDERGRAD',
-        # Engineering Undeclared
-        # 'plan-code': '162B0U',
-        # Used by 24788567
-        # 'plan-code': '16330U',
-        # Used by 3032272725
-        # 'plan-code': '16306U',
-
-        'inc-regs': True,
-        'term-id': '2192',
+        'affiliation-status': 'ALL',
         'inc-acad': True,
         'inc-cntc': True,
         'inc-completed-programs': True,
+        'inc-regs': True,
         'page-number': page,
         'page-size': size,
-        'affiliation-status': 'ALL',
-        # 'affiliation-status': 'ACT',
+        'term-id': '2192',
     })
     return authorized_request_v2(url)
 
@@ -288,24 +235,9 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
     return authorized_request_v2(url)
 
 
-def _get_v2_single_student_as_of(sid):
-    url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', {
-        'inc-acad': True,
-        'inc-attr': True,
-        'inc-cntc': True,
-        'inc-completed-programs': True,
-        'inc-dmgr': True,
-        'inc-gndr': True,
-        'inc-regs': True,
-        'as-of-date': '2018-12-01',
-        'affiliation-status': 'ALL',
-    })
-    return authorized_request_v2(url)
-
-
 @fixture('sis_registrations_api_{cs_id}')
 def _get_registrations(cs_id, mock=None):
-    url = http.build_url(app.config['STUDENT_API_URL'] + '/' + str(cs_id) + '/registrations')
+    url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/registrations')
     with mock(url):
         return authorized_request(url)
 
@@ -333,8 +265,5 @@ def authorized_request(url):
 def basic_auth(url):
     headers = {
         'Accept': 'application/json',
-    }
-    auth_params = {
-        app.config['STUDENT_API_USER']: app.config['STUDENT_API_PWD'],
     }
     return http.request(url, headers, auth=(app.config['STUDENT_API_USER'], app.config['STUDENT_API_PWD']))
