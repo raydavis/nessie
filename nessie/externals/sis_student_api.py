@@ -33,7 +33,7 @@ from nessie.lib.mockingbird import fixture
 
 
 def get_v1_student(cs_id):
-    response = _get_student(cs_id)
+    response = _get_v1_student(cs_id)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('any', {}).get('students', [])
         if unwrapped:
@@ -52,7 +52,7 @@ def get_v2_student(cs_id, term_id=None, as_of=None):
 
 
 @fixture('sis_student_api_{cs_id}')
-def _get_student(cs_id, mock=None):
+def _get_v1_student(cs_id, mock=None):
     url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/all')
     with mock(url):
         return authorized_request(url)
@@ -64,7 +64,7 @@ def _get_v1_student_acst(cs_id):
 
 
 def get_term_gpas(cs_id):
-    response = _get_registrations(cs_id)
+    response = _get_v1_registrations(cs_id)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('any', {}).get('registrations', [])
         term_gpas = {}
@@ -90,40 +90,72 @@ def get_term_gpas(cs_id):
         return
 
 
-def get_v2_bulk_undergrads(size=100, page=1):
-    response = _get_v2_bulk_undergrads(size, page)
+def get_v2_bulk_undergrads(term_id, size=100, page=1):
+    response = _get_v2_bulk_undergrads(term_id, size, page)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('students', [])
-        if len(unwrapped) < 100:
-            app.logger.warn(f'Only {len(unwrapped)} students returned')
+        if len(unwrapped) < size:
+            app.logger.warn(f'{size} students requested; only {len(unwrapped)} returned')
         return unwrapped
     else:
-        app.logger.error(f'End of the loop; got error reponse: {response}')
+        app.logger.error(f'End of the loop; got error response: {response}')
         return False
 
 
-def get_v2_bulk_by_sids(sids, term_id=None, as_of=None):
-    response = _get_v2_bulk_sids(sids, term_id, as_of)
+def get_v2_bulk_by_sids(sids, term_id=None, as_of=None, with_registration=False):
+    response = _get_v2_bulk_sids(sids, term_id, as_of, with_registration)
     if response and hasattr(response, 'json'):
         unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('students', [])
         if len(unwrapped) < len(sids):
             app.logger.warn(f'{len(sids)} SIDs requested; {len(unwrapped)} students returned')
         return unwrapped
     else:
-        app.logger.error(f'Got error reponse: {response}')
+        app.logger.error(f'Got error response: {response}')
         return False
 
 
-def loop_all_advisee_sids(term_id=None, as_of=None):
+def loop_all_advisee_sids_v1():
+    from nessie.lib.queries import get_all_student_ids
+    all_sids = [s['sid'] for s in get_all_student_ids()]
+    all_feeds = []
+    start_api = timer()
+    success_count = 0
+    failure_count = 0
+    index = 1
+    for csid in all_sids:
+        app.logger.info(f'Fetching SIS student API for SID {csid} ({index} of {len(all_sids)})')
+        feed = get_v1_student(csid)
+        if feed:
+            success_count += 1
+            all_feeds.append(feed)
+        else:
+            failure_count += 1
+            app.logger.error(f'SIS student API import failed for CSID {csid}.')
+        index += 1
+    app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
+    all_feeds
+
+
+def really_all_advisee_sids(term_id):
+    feeds = loop_all_advisee_sids(term_id)
+    fill_ins = []
+
+
+
+def loop_all_advisee_sids(term_id=None, as_of=None, with_registration=False):
     from nessie.lib.queries import get_all_student_ids
     all_sids = [s['sid'] for s in get_all_student_ids()]
     all_feeds = []
     start_api = timer()
     for i in range(0, len(all_sids), 100):
         sids = all_sids[i:i + 100]
-        feeds = get_v2_bulk_by_sids(sids, term_id, as_of)
+        feeds = get_v2_bulk_by_sids(sids, term_id, as_of, with_registration)
         if feeds:
             all_feeds += feeds
+
+        if i > 600:
+            break
+
     app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
     # The bulk API may have filtered out some students altogether, and may have returned others with feeds that
     # are missing necessary data (notably cumulative units and GPA, which are tied to registration term).
@@ -156,7 +188,6 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
                 None,
             )
             if not academic_status:
-                app.logger.error(f'SID {sid} has no non-UCBX academicCareer')
                 ucbx_only_sids.append(sid)
                 continue
             if not academic_status.get('cumulativeGPA'):
@@ -181,7 +212,7 @@ def loop_all_advisee_sids(term_id=None, as_of=None):
     }
 
 
-def _get_v2_bulk_undergrads(size=100, page=1):
+def _get_v2_bulk_undergrads(term_id, size=100, page=1):
     url = http.build_url(
         app.config['STUDENT_API_URL'], {
             'affiliation-code': 'UNDERGRAD',
@@ -192,13 +223,13 @@ def _get_v2_bulk_undergrads(size=100, page=1):
             'inc-regs': True,
             'page-number': page,
             'page-size': size,
-            'term-id': '2192',
+            'term-id': term_id,
         },
     )
     return authorized_request_v2(url)
 
 
-def _get_v2_bulk_sids(up_to_100_sids, term_id=None, as_of=None):
+def _get_v2_bulk_sids(up_to_100_sids, term_id=None, as_of=None, with_registration=False):
     id_list = ','.join(up_to_100_sids)
     params = {
         'id-list': id_list,
@@ -209,12 +240,14 @@ def _get_v2_bulk_sids(up_to_100_sids, term_id=None, as_of=None):
         'inc-completed-programs': True,
         'inc-dmgr': True,
         'inc-gndr': True,
-        'inc-regs': True,
+        # 'inc-regs': True,
     }
     if term_id:
         params['term-id'] = term_id
     if as_of:
         params['as-of-date'] = as_of
+    if with_registration:
+        params['inc-regs'] = True
     url = http.build_url(app.config['STUDENT_API_URL'] + '/list', params)
     return authorized_request_v2(url)
 
@@ -242,7 +275,7 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
 
 
 @fixture('sis_registrations_api_{cs_id}')
-def _get_registrations(cs_id, mock=None):
+def _get_v1_registrations(cs_id, mock=None):
     url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/registrations')
     with mock(url):
         return authorized_request(url)

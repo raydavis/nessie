@@ -47,7 +47,7 @@ class TestSisStudentApi:
 
     def test_inner_get_student(self, app):
         """Returns fixture data."""
-        oski_response = student_api._get_student(11667051)
+        oski_response = student_api._get_v1_student(11667051)
         assert oski_response
         assert oski_response.status_code == 200
         students = oski_response.json()['apiResponse']['response']['any']['students']
@@ -66,7 +66,7 @@ class TestSisStudentApi:
         assert gpas['2178']['unitsTakenForGpa'] > 0
 
     def test_inner_get_registrations(self, app):
-        oski_response = student_api._get_registrations(11667051)
+        oski_response = student_api._get_v1_registrations(11667051)
         assert oski_response
         assert oski_response.status_code == 200
         registrations = oski_response.json()['apiResponse']['response']['any']['registrations']
@@ -74,7 +74,7 @@ class TestSisStudentApi:
 
     def test_user_not_found(self, app, caplog):
         """Logs 404 for unknown user and returns informative message."""
-        response = student_api._get_student(9999999)
+        response = student_api._get_v1_student(9999999)
         assert '404 Client Error' in caplog.text
         assert not response
         assert response.raw_response.status_code == 404
@@ -83,8 +83,8 @@ class TestSisStudentApi:
     def test_server_error(self, app, caplog):
         """Logs unexpected server errors and returns informative message."""
         api_error = MockResponse(500, {}, '{"message": "Internal server error."}')
-        with register_mock(student_api._get_student, api_error):
-            response = student_api._get_student(11667051)
+        with register_mock(student_api._get_v1_student, api_error):
+            response = student_api._get_v1_student(11667051)
             assert '500 Server Error' in caplog.text
             assert not response
             assert response.raw_response.status_code == 500
