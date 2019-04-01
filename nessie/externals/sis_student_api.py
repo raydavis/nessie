@@ -114,10 +114,13 @@ def get_v2_bulk_by_sids(sids, term_id=None, as_of=None, with_registration=False)
         return False
 
 
-def loop_all_advisee_sids_v1():
+def loop_all_advisee_sids_v1(all_sids=None):
     from nessie.lib.queries import get_all_student_ids
-    all_sids = [s['sid'] for s in get_all_student_ids()]
+    if not all_sids:
+        all_sids = [s['sid'] for s in get_all_student_ids()]
     all_feeds = []
+    sids_without_academic_statuses = []
+    sids_without_cum_gpa = []
     start_api = timer()
     success_count = 0
     failure_count = 0
@@ -127,19 +130,29 @@ def loop_all_advisee_sids_v1():
         feed = get_v1_student(csid)
         if feed:
             success_count += 1
+            academic_statuses = feed.get('academicStatuses')
+            if not academic_statuses:
+                sids_without_academic_statuses.append(csid)
+            else:
+                academic_status = next(
+                    (ac for ac in academic_statuses if ac['studentCareer']['academicCareer']['code'] != 'UCBX'),
+                    None,
+                )
+                if academic_status and not academic_status.get('cumulativeGPA'):
+                    sids_without_cum_gpa.append(csid)
             all_feeds.append(feed)
         else:
             failure_count += 1
             app.logger.error(f'SIS student API import failed for CSID {csid}.')
         index += 1
     app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
-    all_feeds
-
-
-def really_all_advisee_sids(term_id):
-    feeds = loop_all_advisee_sids(term_id)
-    fill_ins = []
-
+    app.logger.warn(f'sids_without_academic_statuses = {sids_without_academic_statuses}')
+    app.logger.warn(f'sids_without_cum_gpa = {sids_without_cum_gpa}')
+    return {
+        'all_feeds': all_feeds,
+        'sids_without_academic_statuses': sids_without_academic_statuses,
+        'sids_without_cum_gpa': sids_without_cum_gpa,
+    }
 
 
 def loop_all_advisee_sids(term_id=None, as_of=None, with_registration=False):
@@ -147,14 +160,19 @@ def loop_all_advisee_sids(term_id=None, as_of=None, with_registration=False):
     all_sids = [s['sid'] for s in get_all_student_ids()]
     all_feeds = []
     start_api = timer()
-    for i in range(0, len(all_sids), 100):
-        sids = all_sids[i:i + 100]
-        feeds = get_v2_bulk_by_sids(sids, term_id, as_of, with_registration)
-        if feeds:
-            all_feeds += feeds
-
-        if i > 600:
-            break
+    # for i in range(0, len(all_sids), 100):
+    #     sids = all_sids[i:i + 100]
+    #     feeds = get_v2_bulk_by_sids(sids, term_id, as_of, with_registration)
+    #     if feeds:
+    #         all_feeds += feeds
+    #
+    #     if i > 600:
+    #         break
+    all_sids = all_sids[0:600]
+    for sid in all_sids:
+        feed = get_v2_student(sid, term_id)
+        if feed:
+            all_feeds.append(feed)
 
     app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
     # The bulk API may have filtered out some students altogether, and may have returned others with feeds that
