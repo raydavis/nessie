@@ -118,6 +118,9 @@ def loop_all_advisee_sids_v1(all_sids=None):
     from nessie.lib.queries import get_all_student_ids
     if not all_sids:
         all_sids = [s['sid'] for s in get_all_student_ids()]
+
+    all_sids = all_sids[0:600]
+
     all_feeds = []
     sids_without_academic_statuses = []
     sids_without_cum_gpa = []
@@ -135,7 +138,9 @@ def loop_all_advisee_sids_v1(all_sids=None):
                 sids_without_academic_statuses.append(csid)
             else:
                 academic_status = next(
-                    (ac for ac in academic_statuses if ac['studentCareer']['academicCareer']['code'] != 'UCBX'),
+                    (ac for ac in academic_statuses if ac.get('studentCareer') and
+                       ac['studentCareer']['academicCareer']['code'] != 'UCBX')
+                    ,
                     None,
                 )
                 if academic_status and not academic_status.get('cumulativeGPA'):
@@ -160,19 +165,19 @@ def loop_all_advisee_sids(term_id=None, as_of=None, with_registration=False):
     all_sids = [s['sid'] for s in get_all_student_ids()]
     all_feeds = []
     start_api = timer()
-    # for i in range(0, len(all_sids), 100):
-    #     sids = all_sids[i:i + 100]
-    #     feeds = get_v2_bulk_by_sids(sids, term_id, as_of, with_registration)
-    #     if feeds:
-    #         all_feeds += feeds
-    #
-    #     if i > 600:
-    #         break
-    all_sids = all_sids[0:600]
-    for sid in all_sids:
-        feed = get_v2_student(sid, term_id)
-        if feed:
-            all_feeds.append(feed)
+
+    # all_sids = all_sids[0:600]
+
+    for i in range(0, len(all_sids), 100):
+        sids = all_sids[i:i + 100]
+        feeds = get_v2_bulk_by_sids(sids, term_id, as_of, with_registration)
+        if feeds:
+            all_feeds += feeds
+
+    # for sid in all_sids:
+    #     feed = get_v2_student(sid, term_id)
+    #     if feed:
+    #         all_feeds.append(feed)
 
     app.logger.warn(f'Wanted {len(all_sids)} ; got {len(all_feeds)} in {timer() - start_api} secs')
     # The bulk API may have filtered out some students altogether, and may have returned others with feeds that
@@ -281,12 +286,12 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
         'inc-gndr': True,
         'inc-regs': True,
     }
+    # If 'term-id' is not specified, the 'inc-regs' parameter will pull in all registrations.
+    # This will slow responses down considerably.
     if term_id:
         params['term-id'] = term_id
     if as_of:
-        # In format '2018-12-01'. Choosing a date before the end of the no-longer-enrolled student's last enrolled
-        # term appears to be the only way to restore a full v1-style academicStatuses element
-        # which includes cumulativeUnits, cumulativeGPA, termsInAttendance, and major.
+        # In format '2018-12-01'.
         params['as-of-date'] = as_of
     url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', params)
     return authorized_request_v2(url)

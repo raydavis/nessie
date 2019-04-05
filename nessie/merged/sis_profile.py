@@ -69,6 +69,9 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     # career that is not a concurrent enrollment.
     academic_status = None
     for status in sis_student_api_feed.get('academicStatuses', []):
+        # TODO In V2, we can look at the current-term 'reservations' if there is one. For currently unregistered
+        # students, we can either look at the (less frequently run) all-registrations feed of the SID,
+        # or we might be able to extract the right career code from 'studentCareer' or 'studentPlans'.
         career_code = status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
         if career_code and career_code != 'UCBX':
             academic_status = status
