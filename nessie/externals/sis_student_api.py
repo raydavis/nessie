@@ -258,7 +258,8 @@ def _get_v2_bulk_sids(up_to_100_sids, term_id=None, as_of=None, with_registratio
         'id-list': id_list,
         'affiliation-status': 'ALL',
         'inc-acad': True,
-        'inc-attr': True,
+        # studentAttributes are not returned by the "/list" API.
+        # 'inc-attr': True,
         'inc-cntc': True,
         'inc-completed-programs': True,
         'inc-dmgr': True,
