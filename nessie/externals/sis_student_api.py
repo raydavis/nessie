@@ -297,6 +297,320 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
     return authorized_request_v2(url)
 
 
+def get_terms_data(sid):
+    response = _get_v2_registrations(sid)
+
+
+    """
+    Besides termGPA and units, we need to fill in the following which used to be delivered by the
+    currentRegistration element of the V1 API.
+
+    The most recent registration is at the end of the list.
+    'academicLevels' is now an array; we want 'BOT'.
+
+        sis_profile['level'] = academic_status.get('currentRegistration', {}).get('academicLevel', {}).get('level')
+    sis_profile['academicCareer'] = academic_status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
+    for units in academic_status.get('currentRegistration', {}).get('termUnits', []):
+        if units.get('type', {}).get('description') == 'Total':
+            sis_profile['currentTerm'] = {
+                'unitsMaxOverride': units.get('unitsMax'),
+                'unitsMinOverride': units.get('unitsMin'),
+            }
+            break
+    withdrawal_cancel = academic_status.get('currentRegistration', {}).get('withdrawalCancel', {})
+    if not withdrawal_cancel:
+        return
+    sis_profile['withdrawalCancel'] = {
+        'description': withdrawal_cancel.get('type', {}).get('description'),
+        'reason': withdrawal_cancel.get('reason', {}).get('code'),
+        'date': withdrawal_cancel.get('date'),
+    }
+
+
+        {
+        'academicCareer': {'code': 'UGRD', 'description': 'Undergraduate'},
+        'academicLevels': [
+            {
+                'level': {'code': '30', 'description': 'Junior'},
+                'type': {'code': 'BOT', 'description': 'Begining of Term'},
+            },
+            {
+                'level': {'code': '40', 'description': 'Senior'},
+                'type': {'code': 'EOT', 'description': 'End of Term'},
+            },
+        ],
+        'academicStanding': {
+            'fromDate': '2019-01-07',
+            'standing': {'code': 'DS', 'description': 'Dismissed'},
+            'status': {'code': 'DIS', 'description': 'Dismissed'},
+        },
+        'athlete': False,
+        'disabled': True,
+        'eligibilityStatus': {'code': 'C', 'description': 'Continuing'},
+        'eligibleToRegister': True,
+        'intendsToGraduate': False,
+        'registered': True,
+        'term': {
+            'academicYear': '2019',
+            'beginDate': '2018-08-15',
+            'category': {'code': 'R', 'description': 'Regular Term'},
+            'endDate': '2018-12-14',
+            'id': '2188',
+            'name': '2018 Fall',
+        },
+        'termGPA': {
+            'average': 2.156,
+            'source': 'UCB',
+            'type': {'code': 'TGPA', 'description': 'Term GPA'},
+        },
+        'termUnits': [
+            {
+                'type': {'code': 'Total', 'description': 'Total Units'},
+                'unitsCumulative': 97,
+                'unitsMax': 20.5,
+                'unitsMin': 0.5,
+                'unitsPassed': 68,
+                'unitsTaken': 79,
+                'unitsTest': 24,
+                'unitsTransferAccepted': 5,
+                'unitsTransferEarned': 5,
+            },
+            {'type': {'code': 'For GPA', 'description': 'Units For GPA'}, 'unitsPassed': 61, 'unitsTaken': 69},
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsPassed': 7,
+                'unitsTaken': 10.0,
+            },
+        ],
+    },
+
+
+    {
+        'academicCareer': {'code': 'UGRD', 'description': 'Undergraduate'},
+        'academicLevels': [
+            {
+                'level': {'code': '20', 'description': 'Sophomore'},
+                'type': {'code': 'BOT', 'description': 'Begining of Term'},
+            },
+            {
+                'level': {'code': '20', 'description': 'Sophomore'},
+                'type': {'code': 'EOT', 'description': 'End of Term'},
+            },
+        ],
+        'academicStanding': {
+            'fromDate': '2019-01-07',
+            'standing': {
+                'code': 'APT',
+                'description': 'Term Probation (1.5 Rule)',
+            },
+            'status': {'code': 'PRO', 'description': 'Probation'},
+        },
+        'athlete': False,
+        'disabled': False,
+        'eligibilityStatus': {'code': 'C', 'description': 'Continuing'},
+        'eligibleToRegister': True,
+        'intendsToGraduate': False,
+        'registered': True,
+        'term': {
+            'academicYear': '2019',
+            'beginDate': '2018-08-15',
+            'category': {'code': 'R', 'description': 'Regular Term'},
+            'endDate': '2018-12-14',
+            'id': '2188',
+            'name': '2018 Fall',
+        },
+        'termGPA': {
+            'average': 2.222,
+            'source': 'UCB',
+            'type': {'code': 'TGPA', 'description': 'Term GPA'},
+        },
+        'termUnits': [
+            {
+                'type': {'code': 'Total', 'description': 'Total Units'},
+                'unitsCumulative': 45,
+                'unitsMax': 20.5,
+                'unitsMin': 0.5,
+                'unitsPassed': 45,
+                'unitsTaken': 48,
+            },
+            {'type': {'code': 'For GPA', 'description': 'Units For GPA'}, 'unitsPassed': 36, 'unitsTaken': 36},
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsPassed': 9,
+                'unitsTaken': 12,
+            },
+        ],
+    },
+    {
+        'academicCareer': {'code': 'UGRD', 'description': 'Undergraduate'},
+        'academicLevels': [
+            {
+                'level': {'code': '20', 'description': 'Sophomore'},
+                'type': {'code': 'BOT', 'description': 'Begining of Term'},
+            },
+            {
+                'level': {'code': '20', 'description': 'Sophomore'},
+                'type': {'code': 'EOT', 'description': 'End of Term'},
+            },
+        ],
+        'athlete': False,
+        'disabled': False,
+        'eligibilityStatus': {'code': 'C', 'description': 'Continuing'},
+        'eligibleToRegister': True,
+        'intendsToGraduate': False,
+        'registered': False,
+        'term': {
+            'academicYear': '2019',
+            'beginDate': '2019-01-15',
+            'category': {'code': 'R', 'description': 'Regular Term'},
+            'endDate': '2019-05-17',
+            'id': '2192',
+            'name': '2019 Spring',
+        },
+        'termGPA': {
+            'average': 2.222,
+            'source': 'UCB',
+            'type': {'code': 'TGPA', 'description': 'Term GPA'},
+        },
+        'termUnits': [
+            {
+                'type': {'code': 'Total', 'description': 'Total Units'},
+                'unitsCumulative': 45,
+                'unitsMax': 20.5,
+                'unitsMin': 0.5,
+                'unitsPassed': 45,
+                'unitsTaken': 48,
+            },
+            {'type': {'code': 'For GPA', 'description': 'Units For GPA'}, 'unitsPassed': 36, 'unitsTaken': 36},
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsPassed': 9,
+                'unitsTaken': 12,
+            },
+        ],
+        'withdrawalCancel': {
+            'date': '2019-01-11',
+            'lastAttendedDate': '2019-01-11',
+            'reason': {'code': 'PERS', 'description': 'Personal'},
+            'type': {'code': 'CAN', 'description': 'Cancelled'},
+        },
+    },
+
+
+    {
+        'academicCareer': {'code': 'UGRD', 'description': 'Undergraduate'},
+        'academicLevels': [
+            {
+                'level': {'code': '40', 'description': 'Senior'},
+                'type': {'code': 'BOT', 'description': 'Begining of Term'},
+            },
+            {
+                'level': {'code': '40', 'description': 'Senior'},
+                'type': {'code': 'EOT', 'description': 'End of Term'},
+            },
+        ],
+        'academicStanding': {
+            'fromDate': '2019-01-07',
+            'standing': {'code': 'GS', 'description': 'Good Standing'},
+            'status': {'code': 'GST', 'description': 'Good Standing'},
+        },
+        'athlete': True,
+        'disabled': False,
+        'eligibilityStatus': {'code': 'C', 'description': 'Continuing'},
+        'eligibleToRegister': True,
+        'intendsToGraduate': False,
+        'registered': True,
+        'term': {
+            'academicYear': '2019',
+            'beginDate': '2018-08-15',
+            'category': {'code': 'R', 'description': 'Regular Term'},
+            'endDate': '2018-12-14',
+            'id': '2188',
+            'name': '2018 Fall',
+        },
+        'termGPA': {
+            'average': 2.741,
+            'source': 'UCB',
+            'type': {'code': 'TGPA', 'description': 'Term GPA'},
+        },
+        'termUnits': [
+            {
+                'type': {'code': 'Total', 'description': 'Total Units'},
+                'unitsCumulative': 124.7,
+                'unitsMax': 20.5,
+                'unitsMin': 0.5,
+                'unitsPassed': 122,
+                'unitsTaken': 122,
+                'unitsTest': 2.7,
+            },
+            {'type': {'code': 'For GPA', 'description': 'Units For GPA'}, 'unitsPassed': 105, 'unitsTaken': 105},
+            {
+                'type': {
+                    'code': 'Not For GPA',
+                    'description': 'Units Not For GPA',
+                },
+                'unitsPassed': 17,
+                'unitsTaken': 17,
+            },
+        ],
+    },
+
+    """
+    if response and hasattr(response, 'json'):
+        unwrapped = response.json().get('apiResponse', {}).get('response', {}).get('registrations', [])
+        last_registration = {}
+        term_gpas = {}
+        for registration in unwrapped:
+            # Ignore terms in which the student was not an undergraduate.
+            if registration.get('academicCareer', {}).get('code') != 'UGRD':
+                continue
+            # Ignore terms in which the student took no classes with units. These may include future terms.
+            total_units = next((u for u in registration.get('termUnits', []) if u['type']['code'] == 'Total'), None)
+            if not total_units or not total_units.get('unitsTaken'):
+                continue
+            term_id = registration.get('term', {}).get('id')
+            gpa = registration.get('termGPA', {}).get('average')
+            term_units = registration.get('termUnits', [])
+            units_taken_for_gpa = next((tu['unitsTaken'] for tu in term_units if tu['type']['code'] == 'For GPA'), None)
+            if term_id and gpa is not None:
+                term_gpas[term_id] = {
+                    'gpa': gpa,
+                    'unitsTakenForGpa': units_taken_for_gpa,
+                }
+        return term_gpas
+    else:
+        return
+
+
+def _get_v2_registrations(sid):
+    params = {
+        'affiliation-status': 'ALL',
+        'inc-regs': True,
+    }
+    url = http.build_url(app.config['STUDENT_API_URL'] + f'/{sid}', params)
+    return authorized_request_v2(url)
+
+
+def _get_v2_registrations_list(sids):
+    id_list = ','.join(sids)
+    params = {
+        'id-list': id_list,
+        'affiliation-status': 'ALL',
+        'inc-regs': True,
+    }
+    url = http.build_url(app.config['STUDENT_API_URL'] + '/list', params)
+    return authorized_request_v2(url)
+
+
 @fixture('sis_registrations_api_{cs_id}')
 def _get_v1_registrations(cs_id, mock=None):
     url = http.build_url(app.config['STUDENT_V1_API_URL'] + '/' + str(cs_id) + '/registrations')
