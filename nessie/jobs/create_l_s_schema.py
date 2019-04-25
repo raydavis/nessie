@@ -51,18 +51,17 @@ class CreateLSSchema(BackgroundJob):
             verify_external_schema(external_schema, resolved_ddl)
         else:
             raise BackgroundJobError(f'Letters & Science external schema creation failed.')
-        # l_s_rows = redshift.fetch(
-        #     'SELECT * FROM {schema}.students ORDER by sid',
-        #     schema=internal_schema_identifier,
-        # )
-        #
-        # with rds.transaction() as transaction:
-        #     if self.refresh_rds_indexes(l_s_rows, transaction):
-        #         transaction.commit()
-        #         app.logger.info('Refreshed RDS indexes.')
-        #     else:
-        #         transaction.rollback()
-        #         raise BackgroundJobError('Error refreshing RDS indexes.')
+        l_s_rows = redshift.fetch(
+            f'SELECT * FROM {external_schema}.students ORDER by sid'
+        )
+
+        with rds.transaction() as transaction:
+            if self.refresh_rds_indexes(l_s_rows, transaction):
+                transaction.commit()
+                app.logger.info('Refreshed RDS indexes.')
+            else:
+                transaction.rollback()
+                raise BackgroundJobError('Error refreshing RDS indexes.')
 
         return 'Letters & Science internal schema created.'
 
@@ -71,7 +70,10 @@ class CreateLSSchema(BackgroundJob):
             result = transaction.execute(f'TRUNCATE {rds_schema}.students')
             if not result:
                 return False
-            columns = ['sid']
+            columns = [
+                'sid', 'acadplan_code', 'acadplan_descr', 'acadplan_type_code', 'acadplan_ownedby_code',
+                'ldap_uid', 'first_name', 'last_name', 'email_address', 'affiliations',
+            ]
             result = transaction.insert_bulk(
                 f'INSERT INTO {rds_schema}.students ({", ".join(columns)}) VALUES %s',
                 [tuple([r[c] for c in columns]) for r in l_s_rows],

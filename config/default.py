@@ -154,7 +154,6 @@ LOCH_S3_ASC_DATA_SFTP_PATH = 'asc-data/asc-sftp'
 LOCH_S3_BOAC_ANALYTICS_DATA_PATH = 'boac-analytics'
 LOCH_S3_CALNET_DATA_PATH = 'calnet-data'
 LOCH_S3_COE_DATA_PATH = 'coe-data'
-LOCH_S3_L_S_DATA_PATH = 'l-s-data'
 LOCH_S3_PHYSICS_DATA_PATH = 'physics-data'
 LOCH_S3_SIS_ADVISING_NOTES_DATA_PATH = 'sis-advising-notes-data'
 LOCH_S3_SIS_DATA_PATH = 'sis-data'
@@ -165,6 +164,8 @@ LOCH_CANVAS_DATA_REQUESTS_CUTOFF_DATE = '20180101'
 LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 LOGGING_LOCATION = 'nessie.log'
 LOGGING_LEVEL = logging.DEBUG
+
+L_AND_S_ENABLED = False
 
 # These RDS schemas are copied from the Redshift schemas below and contain a subset of index tables.
 RDS_SCHEMA_ASC = 'boac_advising_asc'

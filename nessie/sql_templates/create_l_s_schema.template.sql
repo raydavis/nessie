@@ -58,3 +58,21 @@ WITH SERDEPROPERTIES (
 )
 STORED AS TEXTFILE
 LOCATION '{loch_s3_sis_data_path}/l_and_s/';
+
+--------------------------------------------------------------------
+-- Internal Schema
+--------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS {redshift_schema_l_s} CASCADE;
+CREATE SCHEMA {redshift_schema_l_s};
+
+--------------------------------------------------------------------
+-- Internal Tables
+--------------------------------------------------------------------
+
+CREATE TABLE {redshift_schema_l_s}.students
+DISTKEY (sid)
+SORTKEY (sid)
+AS (
+    SELECT DISTINCT s.sid FROM {redshift_schema_l_s_external}.students s
+);
