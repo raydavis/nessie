@@ -31,7 +31,7 @@ from nessie.lib.berkeley import degree_program_url_for_major, term_name_for_sis_
 from nessie.lib.util import vacuum_whitespace
 
 
-def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed):
+def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed, last_registration_feed):
     sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed)
     if not sis_student_api_feed:
         return False
@@ -54,6 +54,7 @@ def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed):
             app.logger.error(f'Hub Student API returned malformed response in {sis_student_api_feed}')
             app.logger.error(e)
 
+    merge_registration(sis_student_api_feed, last_registration_feed, sis_profile)
     if sis_profile.get('academicCareer') == 'UGRD':
         sis_profile['degreeProgress'] = degree_progress_api_feed and json.loads(degree_progress_api_feed)
 
@@ -69,7 +70,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     # career that is not a concurrent enrollment.
     academic_status = None
     for status in sis_student_api_feed.get('academicStatuses', []):
-        career_code = status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
+        career_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
         if career_code and career_code != 'UCBX':
             academic_status = status
             break
@@ -97,21 +98,43 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     else:
         sis_profile['cumulativeGPA'] = cumulative_gpa
 
-    sis_profile['level'] = academic_status.get('currentRegistration', {}).get('academicLevel', {}).get('level')
     sis_profile['termsInAttendance'] = academic_status.get('termsInAttendance')
-    sis_profile['academicCareer'] = academic_status.get('currentRegistration', {}).get('academicCareer', {}).get('code')
 
-    for units in academic_status.get('currentRegistration', {}).get('termUnits', []):
+    merge_sis_profile_matriculation(academic_status, sis_profile)
+    merge_sis_profile_plans(academic_status, sis_profile)
+
+
+def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile):
+    registration = next((r for r in sis_student_api_feed.get('registrations', [])), None)
+    if not registration:
+        registration = last_registration_feed
+    sis_profile['currentRegistration'] = registration
+    if not registration:
+        return
+
+    # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
+    # for the end-of-term. The beginning-of-term level should match what V1 gave us.
+    levels = registration.get('academicLevels', [])
+    sis_profile['level'] = next((l['level']['description'] for l in levels if l['type']['code'] == 'BOT'), None)
+    sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
+    for units in registration.get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
             sis_profile['currentTerm'] = {
                 'unitsMaxOverride': units.get('unitsMax'),
                 'unitsMinOverride': units.get('unitsMin'),
             }
             break
-
-    merge_sis_profile_matriculation(academic_status, sis_profile)
-    merge_sis_profile_plans(academic_status, sis_profile)
-    merge_sis_profile_withdrawal_cancel(academic_status, sis_profile)
+    withdrawal_cancel = registration.get('withdrawalCancel', {})
+    if withdrawal_cancel:
+        sis_profile['withdrawalCancel'] = {
+            'description': withdrawal_cancel.get('type', {}).get('description'),
+            'reason': withdrawal_cancel.get('reason', {}).get('code'),
+            'date': withdrawal_cancel.get('date'),
+        }
+    """Possibly also check most recent registrations feed for
+        ['academicStanding']['status'] of
+        {'code': 'DIS', 'description': 'Dismissed'}
+    """
 
 
 def merge_sis_profile_emails(sis_student_api_feed, sis_profile):
@@ -185,14 +208,3 @@ def merge_sis_profile_plans(academic_status, sis_profile):
         # Add plan unless it's a duplicate.
         if not next((p for p in sis_profile['plans'] if p.get('description') == plan_feed.get('description')), None):
             sis_profile['plans'].append(plan_feed)
-
-
-def merge_sis_profile_withdrawal_cancel(academic_status, sis_profile):
-    withdrawal_cancel = academic_status.get('currentRegistration', {}).get('withdrawalCancel', {})
-    if not withdrawal_cancel:
-        return
-    sis_profile['withdrawalCancel'] = {
-        'description': withdrawal_cancel.get('type', {}).get('description'),
-        'reason': withdrawal_cancel.get('reason', {}).get('code'),
-        'date': withdrawal_cancel.get('date'),
-    }

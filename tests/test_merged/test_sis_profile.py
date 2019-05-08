@@ -43,6 +43,13 @@ def sis_api_degree_progress(app, student_tables):
     return redshift.fetch(sql)
 
 
+@pytest.fixture()
+def sis_api_last_registrations(app, student_tables):
+    from nessie.externals import redshift
+    sql = f"""SELECT sid, feed FROM student_test.student_last_registrations"""
+    return redshift.fetch(sql)
+
+
 def merged_profile(sid, profile_rows, degree_progress_rows):
     profile_feed = next((r['feed'] for r in profile_rows if r['sid'] == sid), None)
     progress_feed = next((r['feed'] for r in degree_progress_rows if r['sid'] == sid), None)

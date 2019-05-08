@@ -60,6 +60,13 @@ CREATE TABLE {redshift_schema_coe}.student_profiles
     profile TEXT NOT NULL
 );
 
+
+CREATE SCHEMA IF NOT EXISTS {redshift_schema_l_s};
+
+CREATE TABLE {redshift_schema_l_s}.students(
+    sid VARCHAR
+);
+
 CREATE SCHEMA IF NOT EXISTS {redshift_schema_physics};
 
 CREATE TABLE {redshift_schema_physics}.students
@@ -109,6 +116,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_enrollment_terms
 );
 
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_holds
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}.student_last_registrations
 (
     sid VARCHAR NOT NULL,
     feed TEXT NOT NULL
@@ -182,6 +195,12 @@ CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_holds
     feed TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_last_registrations
+(
+    sid VARCHAR NOT NULL,
+    feed TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS {redshift_schema_student}_staging.student_majors
 (
     sid VARCHAR NOT NULL,
@@ -244,6 +263,9 @@ VALUES
 ('7890123456', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, 510, 520, 620, FALSE, 'sp', '2020', FALSE, 'C'),
 ('9000000000', '1133399', 'F', 'B', TRUE, FALSE, TRUE, FALSE, FALSE, NULL, NULL, 720, FALSE, NULL, NULL, FALSE, 'Z'),
 ('9100000000', '90412', 'M', 'X', FALSE, FALSE, FALSE, FALSE, TRUE, 720, 760, 770, TRUE, 'fa', '2018', TRUE, 'N');
+
+INSERT INTO {redshift_schema_l_s}.students (sid)
+VALUES ('1234567890');
 
 INSERT INTO {redshift_schema_physics}.students (sid)
 VALUES ('2345678901');

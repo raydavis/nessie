@@ -35,7 +35,7 @@ class TestImportSisStudentApi:
         from nessie.jobs.import_sis_student_api import ImportSisStudentApi
         with mock_s3(app):
             result = ImportSisStudentApi().run_wrapped()
-        assert result == 'SIS student API import job completed: 2 succeeded, 6 failed.'
+        assert result == 'SIS student API import job completed: 3 succeeded, 6 failed.'
         rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
         print(rows)
         assert len(rows) == 3
