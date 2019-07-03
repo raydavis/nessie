@@ -38,11 +38,16 @@ class TestImportTermGpas:
         with capture_app_logs(app):
             with mock_s3(app):
                 result = ImportTermGpas().run_wrapped()
-            assert result == 'Term GPA import completed: 1 succeeded, 0 returned no registrations, 7 failed.'
+            assert result == 'Term GPA import completed: 2 succeeded, 0 returned no registrations, 7 failed.'
             rows = redshift.fetch('SELECT * FROM student_test.student_term_gpas')
-            assert len(rows) == 7
-            for row in rows:
+            assert len(rows) == 11
+            for row in rows[0:6]:
                 assert row['sid'] == '11667051'
+            for row in rows[7:10]:
+                assert row['sid'] == '1234567890'
             row_2178 = next(r for r in rows if r['term_id'] == '2178')
             assert row_2178['gpa'] == Decimal('3.000')
             assert row_2178['units_taken_for_gpa'] == Decimal('8.0')
+
+            rows = redshift.fetch('SELECT * FROM student_test.student_last_registrations')
+            assert len(rows) == 2

@@ -149,6 +149,8 @@ def student_tables(app):
         'sis_student_api_11667051',
         'sis_student_api_1234567890',
         'sis_student_api_2345678901',
+        'sis_student_registrations_api_11667051',
+        'sis_student_registrations_api_1234567890'
     ]:
         with open(f'{fixture_path}/{key}.json', 'r') as f:
             feed = f.read()

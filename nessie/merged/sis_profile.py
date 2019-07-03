@@ -106,6 +106,9 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
 
 def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile):
     registration = next((r for r in sis_student_api_feed.get('registrations', [])), None)
+    # If the student is not officially registered in the current term, the basic V2 Students API will not include a
+    # 'registrations' element. Instead, we find the most recent registration-hosted data through the fuller
+    # V2 registrations feed.
     if not registration:
         registration = last_registration_feed
     sis_profile['currentRegistration'] = registration
@@ -124,6 +127,7 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
                 'unitsMinOverride': units.get('unitsMin'),
             }
             break
+    # TODO Should we also check for ['academicStanding']['status'] == {'code': 'DIS', 'description': 'Dismissed'}?
     withdrawal_cancel = registration.get('withdrawalCancel', {})
     if withdrawal_cancel:
         sis_profile['withdrawalCancel'] = {
@@ -131,10 +135,6 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
             'reason': withdrawal_cancel.get('reason', {}).get('code'),
             'date': withdrawal_cancel.get('date'),
         }
-    """Possibly also check most recent registrations feed for
-        ['academicStanding']['status'] of
-        {'code': 'DIS', 'description': 'Dismissed'}
-    """
 
 
 def merge_sis_profile_emails(sis_student_api_feed, sis_profile):

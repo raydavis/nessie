@@ -33,11 +33,12 @@ class TestImportSisStudentApi:
 
     def test_import_sis_student_api(self, app, metadata_db, student_tables, caplog):
         from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+        initial_rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
+        assert len(initial_rows) > 0
         with mock_s3(app):
             result = ImportSisStudentApi().run_wrapped()
         assert result == 'SIS student API import job completed: 3 succeeded, 6 failed.'
         rows = redshift.fetch('SELECT * FROM student_test.sis_api_profiles ORDER BY sid')
-        print(rows)
         assert len(rows) == 3
         assert rows[0]['sid'] == '11667051'
         assert rows[1]['sid'] == '1234567890'
