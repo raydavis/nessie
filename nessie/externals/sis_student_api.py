@@ -234,15 +234,18 @@ def get_term_gpas_registration(sid):
     if registrations:
         term_gpas = {}
         last_registration = {}
-        for registration in registrations:
-            # Ignore terms spent as an Extension student.
-            if registration.get('academicCareer', {}).get('code') == 'UCBX':
-                continue
 
+        for registration in registrations:
             # Ignore terms in which the student took no classes with units. These may include future terms.
             total_units = next((u for u in registration.get('termUnits', []) if u['type']['code'] == 'Total'), None)
             if not total_units or not total_units.get('unitsTaken'):
                 continue
+
+            # At present, terms spent as an Extension student are not included in Term GPAs (but see BOAC-2266).
+            # However, if there are no other types of registration, the Extension term is used for academicCareer.
+            if registration.get('academicCareer', {}).get('code') == 'UCBX':
+                if last_registration and (last_registration.get('academicCareer', {}).get('code') != 'UCBX'):
+                    continue
 
             # The most recent registration will be at the end of the list.
             last_registration = registration
