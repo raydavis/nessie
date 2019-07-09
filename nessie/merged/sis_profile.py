@@ -32,7 +32,7 @@ from nessie.lib.util import vacuum_whitespace
 
 
 def parse_merged_sis_profile(sis_student_api_feed, degree_progress_api_feed, last_registration_feed):
-    sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed)
+    sis_student_api_feed = sis_student_api_feed and json.loads(sis_student_api_feed, strict=False)
     if not sis_student_api_feed:
         return False
 
@@ -69,6 +69,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
     # The Hub may return multiple academic statuses. We'll select the first status with a well-formed academic
     # career that is not a concurrent enrollment.
     academic_status = None
+    career_code = None
     for status in sis_student_api_feed.get('academicStatuses', []):
         career_code = status.get('studentCareer', {}).get('academicCareer', {}).get('code')
         if career_code and career_code != 'UCBX':
@@ -77,6 +78,7 @@ def merge_sis_profile_academic_status(sis_student_api_feed, sis_profile):
         elif career_code == 'UCBX':
             academic_status = status
             next
+    sis_profile['academicCareer'] = career_code
     if not academic_status:
         return
 
@@ -110,16 +112,18 @@ def merge_registration(sis_student_api_feed, last_registration_feed, sis_profile
     # 'registrations' element. Instead, we find the most recent registration-hosted data through the fuller
     # V2 registrations feed.
     if not registration:
-        registration = last_registration_feed
+        registration = last_registration_feed and json.loads(last_registration_feed)
     sis_profile['currentRegistration'] = registration
     if not registration:
         return
+
+    if not sis_profile['academicCareer']:
+        sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
 
     # The old 'academicLevel' element has become at least two 'academicLevels': one for the beginning-of-term, one
     # for the end-of-term. The beginning-of-term level should match what V1 gave us.
     levels = registration.get('academicLevels', [])
     sis_profile['level'] = next((l['level']['description'] for l in levels if l['type']['code'] == 'BOT'), None)
-    sis_profile['academicCareer'] = registration.get('academicCareer', {}).get('code')
     for units in registration.get('termUnits', []):
         if units.get('type', {}).get('description') == 'Total':
             sis_profile['currentTerm'] = {

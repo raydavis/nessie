@@ -398,10 +398,6 @@
                   "term": {
                     "id": "2155",
                     "name": "2015 Summer"
-                  },
-                  "type": {
-                    "code": "",
-                    "description": ""
                   }
                 }
               },
@@ -518,15 +514,15 @@
           "registrations": [
             {
               "term": {
-                "academicYear": "2017",
-                "id": "2172",
-                "name": "2017 Spring",
+                "id": "2178",
+                "name": "2017 Fall",
                 "category": {
                   "code": "R",
                   "description": "Regular Term"
                 },
-                "beginDate": "2017-01-15",
-                "endDate": "2017-05-17"
+                "academicYear": "2018",
+                "beginDate": "2017-08-16",
+                "endDate": "2017-12-15"
               },
               "academicCareer": {
                 "code": "UGRD",
@@ -951,181 +947,7 @@
                   "unitsTransferEarned": 0,
                   "unitsTransferAccepted": 0
                 }
-              ],
-              "currentRegistration": {
-                "term": {
-                  "id": "2188",
-                  "name": "2018 Fall"
-                },
-                "academicCareer": {
-                  "code": "UCBX",
-                  "description": "UC Berkeley Extension"
-                },
-                "eligibleToRegister": true,
-                "eligibilityStatus": {
-                  "code": "C",
-                  "description": "Continuing"
-                },
-                "registered": true,
-                "disabled": false,
-                "athlete": false,
-                "intendsToGraduate": false,
-                "academicLevel": {
-                  "type": {
-                    "code": "Begining of Term"
-                  },
-                  "level": {
-                    "code": "00",
-                    "description": "Not Set"
-                  }
-                },
-                "termUnits": [
-                  {
-                    "type": {
-                      "code": "Total",
-                      "description": "Total"
-                    },
-                    "unitsMin": 0,
-                    "unitsMax": 0,
-                    "unitsEnrolled": 0,
-                    "unitsWaitlisted": 0,
-                    "unitsTaken": 10,
-                    "unitsPassed": 10,
-                    "unitsIncomplete": 0,
-                    "unitsTransferEarned": 0,
-                    "unitsTransferAccepted": 0,
-                    "unitsTest": 0,
-                    "unitsOther": 0
-                  },
-                  {
-                    "type": {
-                      "code": "For GPA",
-                      "description": "For GPA"
-                    },
-                    "unitsMin": 0,
-                    "unitsMax": 0,
-                    "unitsEnrolled": 0,
-                    "unitsWaitlisted": 0,
-                    "unitsTaken": 10,
-                    "unitsPassed": 10,
-                    "unitsIncomplete": 0,
-                    "unitsTransferEarned": 0
-                  },
-                  {
-                    "type": {
-                      "code": "Not For GPA",
-                      "description": "Not For GPA"
-                    },
-                    "unitsMin": 0,
-                    "unitsMax": 0,
-                    "unitsEnrolled": 0,
-                    "unitsWaitlisted": 0,
-                    "unitsTaken": 0,
-                    "unitsPassed": 0,
-                    "unitsIncomplete": 0,
-                    "unitsTransferEarned": 0
-                  }
-                ],
-                "termGPA": {
-                  "type": {
-                    "code": "Term GPA",
-                    "description": "Term GPA"
-                  },
-                  "average": 2.33
-                },
-                "specialStudyPrograms": [],
-                "withdrawalCancel": {},
-                "new": true
-              }
-            }
-          ],
-          "registrations": [
-            {
-              "term": {
-                "id": "2188",
-                "name": "2018 Fall",
-                "beginDate": "2018-09-15",
-                "endDate": "2018-12-17"
-              },
-              "academicCareer": {
-                "code": "UCBX",
-                "description": "UC Berkeley Extension"
-              },
-              "eligibleToRegister": true,
-              "eligibilityStatus": {
-                "code": "C",
-                "description": "Continuing"
-              },
-              "registered": true,
-              "disabled": false,
-              "athlete": false,
-              "intendsToGraduate": false,
-              "academicLevel": {
-                "type": {
-                  "code": "Begining of Term"
-                },
-                "level": {
-                  "code": "00",
-                  "description": "Not Set"
-                }
-              },
-              "termUnits": [
-                {
-                  "type": {
-                    "code": "Total",
-                    "description": "Total"
-                  },
-                  "unitsMin": 0,
-                  "unitsMax": 0,
-                  "unitsEnrolled": 0,
-                  "unitsWaitlisted": 0,
-                  "unitsTaken": 10,
-                  "unitsPassed": 10,
-                  "unitsIncomplete": 0,
-                  "unitsTransferEarned": 0,
-                  "unitsTransferAccepted": 0,
-                  "unitsTest": 0,
-                  "unitsOther": 0
-                },
-                {
-                  "type": {
-                    "code": "For GPA",
-                    "description": "For GPA"
-                  },
-                  "unitsMin": 0,
-                  "unitsMax": 0,
-                  "unitsEnrolled": 0,
-                  "unitsWaitlisted": 0,
-                  "unitsTaken": 10,
-                  "unitsPassed": 10,
-                  "unitsIncomplete": 0,
-                  "unitsTransferEarned": 0
-                },
-                {
-                  "type": {
-                    "code": "Not For GPA",
-                    "description": "Not For GPA"
-                  },
-                  "unitsMin": 0,
-                  "unitsMax": 0,
-                  "unitsEnrolled": 0,
-                  "unitsWaitlisted": 0,
-                  "unitsTaken": 0,
-                  "unitsPassed": 0,
-                  "unitsIncomplete": 0,
-                  "unitsTransferEarned": 0
-                }
-              ],
-              "termGPA": {
-                "type": {
-                  "code": "Term GPA",
-                  "description": "Term GPA"
-                },
-                "average": 2.33
-              },
-              "specialStudyPrograms": [],
-              "withdrawalCancel": {},
-              "new": true
+              ]
             }
           ],
           "degrees": []
@@ -1287,8 +1109,9 @@
                     "name": "2015 Summer"
                   },
                   "type": {
-                    "code": "",
-                    "description": ""
+                    "code": "TRN",
+                    "description": "Transfer",
+                    "formalDescription": "Transfer Student"
                   }
                 }
               },
@@ -1422,11 +1245,15 @@
               "registered": false,
               "specialStudyPrograms": [],
               "term": {
-                "academicYear": "2017",
-                "id": "2172",
-                "name": "2017 Spring",
-                "beginDate": "2017-01-15",
-                "endDate": "2017-05-17"
+                "id": "2178",
+                "name": "2017 Fall",
+                "category": {
+                  "code": "R",
+                  "description": "Regular Term"
+                },
+                "academicYear": "2018",
+                "beginDate": "2017-08-16",
+                "endDate": "2017-12-15"
               },
               "termGPA": {
                 "average": 0,
@@ -1479,8 +1306,8 @@
                 }
               ],
               "withdrawalCancel": {
-                "date": "2017-03-31",
-                "lastAttendedDate": "2017-03-31",
+                "date": "2017-10-31",
+                "lastAttendedDate": "2017-10-31",
                 "reason": {
                   "code": "Personal"
                 },

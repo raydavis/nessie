@@ -246,6 +246,7 @@ INSERT INTO {redshift_schema_calnet}.persons
 (sid, ldap_uid, first_name, last_name, campus_email, email, affiliations)
 VALUES
 ('11667051', '61889', 'Deborah', 'Davies', 'dd1@berkeley.edu', 'dd1@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
+('1234567890', '12345', 'Osk', 'Bear', '', '', 'FORMER-STUDENT'),
 ('2345678901', '98765', 'Dave', 'Doolittle', 'dd2@berkeley.edu', 'dd2@berkeley', 'STUDENT-TYPE-REGISTERED'),
 ('3456789012', '242881', 'Paul', 'Kerschen', 'pk@berkeley.edu', 'pk@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
 ('5678901234', '9933311', 'Sandeep', 'Jayaprakash', 'sj@berkeley.edu', 'sj@berkeley.edu', 'STUDENT-TYPE-REGISTERED'),
@@ -274,10 +275,3 @@ INSERT INTO {redshift_schema_student}.sis_api_degree_progress
 (sid, feed)
 VALUES
 ('11667051', %(sis_degree_progress_11667051)s);
-
-INSERT INTO {redshift_schema_student}.sis_api_profiles
-(sid, feed)
-VALUES
-('11667051', %(sis_student_api_11667051)s),
-('1234567890', %(sis_student_api_1234567890)s),
-('2345678901', %(sis_student_api_2345678901)s);

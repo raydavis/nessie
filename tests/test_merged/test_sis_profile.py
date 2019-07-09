@@ -27,11 +27,15 @@ import json
 
 from nessie.merged.sis_profile import parse_merged_sis_profile
 import pytest
+from tests.util import mock_s3
 
 
 @pytest.fixture()
 def sis_api_profiles(app, student_tables):
     from nessie.externals import redshift
+    from nessie.jobs.import_sis_student_api import ImportSisStudentApi
+    with mock_s3(app):
+        ImportSisStudentApi().run_wrapped()
     sql = f"""SELECT sid, feed FROM student_test.sis_api_profiles"""
     return redshift.fetch(sql)
 
@@ -46,6 +50,9 @@ def sis_api_degree_progress(app, student_tables):
 @pytest.fixture()
 def sis_api_last_registrations(app, student_tables):
     from nessie.externals import redshift
+    from nessie.jobs.import_term_gpas import ImportTermGpas
+    with mock_s3(app):
+        ImportTermGpas().run_wrapped()
     sql = f"""SELECT sid, feed FROM student_test.student_last_registrations"""
     return redshift.fetch(sql)
 
@@ -78,7 +85,7 @@ class TestMergedSisProfile:
         profile = merged_profile('2345678901', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['withdrawalCancel']['description'] == 'Withdrew'
         assert profile['withdrawalCancel']['reason'] == 'Personal'
-        assert profile['withdrawalCancel']['date'] == '2017-03-31'
+        assert profile['withdrawalCancel']['date'] == '2017-10-31'
 
     def test_degree_progress(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
@@ -99,13 +106,15 @@ class TestMergedSisProfile:
 
     def test_current_term(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert profile['currentRegistration']['term']['id'] == '2178'
+        assert profile['level'] == 'Junior'
         assert profile['currentTerm']['unitsMaxOverride'] == 24
         assert profile['currentTerm']['unitsMinOverride'] == 15
 
     def test_zero_gpa_when_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         for row in sis_api_profiles:
             if row['sid'] == '11667051':
-                feed = json.loads(row['feed'])
+                feed = json.loads(row['feed'], strict=False)
                 feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
                 row['feed'] = json.dumps(feed)
                 break
@@ -115,7 +124,7 @@ class TestMergedSisProfile:
     def test_null_gpa_when_no_gpa_units(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         for row in sis_api_profiles:
             if row['sid'] == '11667051':
-                feed = json.loads(row['feed'])
+                feed = json.loads(row['feed'], strict=False)
                 feed['academicStatuses'][1]['cumulativeGPA']['average'] = 0
                 feed['academicStatuses'][1]['cumulativeUnits'][1]['unitsTaken'] = 0
                 row['feed'] = json.dumps(feed)
@@ -135,3 +144,9 @@ class TestMergedSisProfile:
     def test_transfer_false_if_notation_not_present(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
         profile = merged_profile('11667051', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
         assert profile['transfer'] is False
+
+    def test_no_registrations_in_list(self, app, sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations):
+        """Falls back to last term-with-units if the student is not active in the current term."""
+        profile = merged_profile('1234567890', sis_api_profiles, sis_api_degree_progress, sis_api_last_registrations)
+        assert profile['currentRegistration']['term']['id'] == '2172'
+        assert profile['level'] == 'Sophomore'

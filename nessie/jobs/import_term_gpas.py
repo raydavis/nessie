@@ -33,7 +33,7 @@ from nessie.jobs.background_job import BackgroundJob, BackgroundJobError
 from nessie.lib.queries import get_all_student_ids
 from nessie.lib.util import encoded_tsv_row, get_s3_sis_api_daily_path, resolve_sql_template_string, split_tsv_row
 
-"""Logic for term GPA import job, along with other registrations data."""
+"""Imports and stores SIS Students Registrations API data, including term GPAs and most recent registration."""
 
 
 def async_get_feed(app_obj, sid):

@@ -80,16 +80,16 @@ class TestSisStudentApi:
         reg_feed = student_api.get_term_gpas_registration(11667051)
         gpas = reg_feed['term_gpas']
         assert len(gpas) == 7
-        assert gpas['2158']['gpa'] == 3.3
+        assert gpas['2148']['gpa'] == 3.3
         assert gpas['2158']['unitsTakenForGpa'] > 0
-        assert gpas['2162']['gpa'] == 4.0
-        assert gpas['2162']['unitsTakenForGpa'] > 0
-        assert gpas['2165']['gpa'] == 0.0
-        assert gpas['2165']['unitsTakenForGpa'] == 0
-        assert gpas['2178']['gpa'] == 3.0
-        assert gpas['2178']['unitsTakenForGpa'] > 0
+        assert gpas['2152']['gpa'] == 4.0
+        assert gpas['2152']['unitsTakenForGpa'] > 0
+        assert gpas['2155']['gpa'] == 0.0
+        assert gpas['2155']['unitsTakenForGpa'] == 0
+        assert gpas['2168']['gpa'] == 3.0
+        assert gpas['2168']['unitsTakenForGpa'] > 0
         last_registration = reg_feed['last_registration']
-        assert last_registration['term']['id'] == '2182'
+        assert last_registration['term']['id'] == '2172'
         assert last_registration['academicCareer']['code'] == 'UGRD'
         assert len(last_registration['academicLevels']) == 2
         assert last_registration['academicLevels'][0]['type']['code'] == 'BOT'

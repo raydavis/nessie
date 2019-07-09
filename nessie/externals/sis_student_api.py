@@ -218,6 +218,17 @@ def _get_v2_single_student(sid, term_id=None, as_of=None):
         'inc-gndr': True,
         'inc-regs': True,
     }
+    params = {
+        'affiliation-status': 'ALL',
+        'inc-acad': True,
+        'inc-attr': True,
+        # 'inc-cntc': True,
+        'inc-completed-programs': True,
+        'inc-incompleted-programs': True,
+        # 'inc-dmgr': True,
+        # 'inc-gndr': True,
+        # 'inc-regs': True,
+    }
     # If 'term-id' is not specified, the 'inc-regs' parameter will pull in all registrations.
     # This will slow responses down considerably.
     if term_id:

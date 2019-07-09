@@ -111,15 +111,15 @@
       "registrations": [
         {
           "term": {
-            "id": "2178",
-            "name": "2017 Fall",
+            "id": "2158",
+            "name": "2015 Fall",
             "category": {
               "code": "R",
               "description": "Regular Term"
             },
-            "academicYear": "2018",
-            "beginDate": "2017-08-16",
-            "endDate": "2017-12-15"
+            "academicYear": "2016",
+            "beginDate": "2015-08-16",
+            "endDate": "2015-12-15"
           },
           "academicCareer": {
             "code": "UGRD",
@@ -165,7 +165,7 @@
               "code": "GST",
               "description": "Good Standing"
             },
-            "fromDate": "2018-01-05"
+            "fromDate": "2016-01-05"
           },
           "termUnits": [
             {
@@ -209,15 +209,15 @@
         },
         {
           "term": {
-            "id": "2182",
-            "name": "2018 Spring",
+            "id": "2162",
+            "name": "2016 Spring",
             "category": {
               "code": "R",
               "description": "Regular Term"
             },
-            "academicYear": "2018",
-            "beginDate": "2018-01-09",
-            "endDate": "2018-05-11"
+            "academicYear": "2016",
+            "beginDate": "2016-01-09",
+            "endDate": "2016-05-11"
           },
           "academicCareer": {
             "code": "UGRD",
@@ -263,7 +263,7 @@
               "code": "GST",
               "description": "Good Standing"
             },
-            "fromDate": "2018-05-25"
+            "fromDate": "2016-05-25"
           },
           "termUnits": [
             {
@@ -307,15 +307,15 @@
         },
         {
           "term": {
-            "id": "2185",
-            "name": "2018 Summer",
+            "id": "2165",
+            "name": "2016 Summer",
             "category": {
               "code": "S",
               "description": "Summer Term"
             },
-            "academicYear": "2019",
-            "beginDate": "2018-05-21",
-            "endDate": "2018-08-10"
+            "academicYear": "2017",
+            "beginDate": "2016-05-21",
+            "endDate": "2016-08-10"
           },
           "academicCareer": {
             "code": "UGRD",
@@ -394,15 +394,15 @@
         },
         {
           "term": {
-            "id": "2188",
-            "name": "2018 Fall",
+            "id": "2168",
+            "name": "2016 Fall",
             "category": {
               "code": "R",
               "description": "Regular Term"
             },
-            "academicYear": "2019",
-            "beginDate": "2018-08-15",
-            "endDate": "2018-12-14"
+            "academicYear": "2017",
+            "beginDate": "2016-08-15",
+            "endDate": "2016-12-14"
           },
           "academicCareer": {
             "code": "UGRD",
@@ -448,7 +448,7 @@
               "code": "PRO",
               "description": "Probation"
             },
-            "fromDate": "2019-01-07"
+            "fromDate": "2017-01-07"
           },
           "termUnits": [
             {
@@ -492,15 +492,15 @@
         },
         {
           "term": {
-            "id": "2192",
-            "name": "2019 Spring",
+            "id": "2172",
+            "name": "2017 Spring",
             "category": {
               "code": "R",
               "description": "Regular Term"
             },
-            "academicYear": "2019",
-            "beginDate": "2019-01-15",
-            "endDate": "2019-05-17"
+            "academicYear": "2017",
+            "beginDate": "2017-01-15",
+            "endDate": "2017-05-17"
           },
           "academicCareer": {
             "code": "UGRD",
